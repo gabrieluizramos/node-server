@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Embed Website</title>
+        <meta charset="UTF-8">
+        <style>
+            *{
+                padding: 0;
+                margin: 0;
+            }
+            html , body{
+                height: 100%;
+            }
+            iframe{
+                width: 100%;
+                height: 100%;
+                border: 0;
+            }
+            #form{
+                margin-bottom: 10px;
+                padding: 10px;
+                position: fixed;
+                width: 100%;
+                left: 0;
+                top: 0;
+                box-shadow: 0 0 3px rgba(0, 0, 0, 0.55);
+                z-index:3;
+                background: white;
+            }
+            #iframe{
+                margin-top: 50px !important;
+            }
+        </style>
+    </head>
+    <body>
+        <form name="mudaFrame" id="form">
+            <input type="text" name="url">
+            <button>alterar</button>
+        </form>
+        <section id="iframe"></section>
+
+        <script>
+
+            var CLIENT_DATA = {
+                config : {
+                    url : null ,
+                    html : null
+                } ,
+                elements : {
+                    iframe : document.querySelector( '#iframe' )
+                }
+            };
+
+            function replaceAssets( element , assetString ){
+                if( !element[ assetString ].includes( '^(http|https)://' ) ){
+                    var newAssetURL = CLIENT_DATA.config.url + '/' + element[ assetString ].replace( window.location.origin , '' );
+                    element[ assetString ] = newAssetURL;
+                }
+            }
+
+            function manipulateClientHTML( html ){
+
+                var allStyles = html.querySelectorAll( '[rel="stylesheet"]' );
+                var allSrc = html.querySelectorAll( '[src]' );
+
+                allStyles.forEach( function( element ){
+                    replaceAssets( element , 'href' );
+                });
+
+                allSrc.forEach( function( element ){
+                    replaceAssets( element , 'src' );
+                });
+
+                window.HTMLclientContent = html;
+
+                document.getElementById( 'iframe' ).appendChild( html );
+            }
+
+            function sendRequest(url, body, callbackSuccess) {
+                window.url = url;
+                var http = new XMLHttpRequest();
+                http.open('get', url, true);
+
+                //Send the proper header information along with the request
+                http.setRequestHeader('Content-type', 'application/json');
+
+                http.onreadystatechange = function() {
+                    if(http.readyState == 4) {
+                        if (http.status == 200) {
+                            callbackSuccess( http.responseText );
+                        } else {
+                            console.log( 'erro Ajax' );
+                        }
+                    }   
+                };
+                http.send( JSON.stringify( body ) );
+            }
+
+            function handleRequestSuccess( ajaxSuccess ){
+                console.log( ajaxSuccess );
+                var html = document.createElement('div');
+                html.id = 'client-html';
+                html.innerHTML = ajaxSuccess;
+                CLIENT_DATA.config.html = html
+                manipulateClientHTML( CLIENT_DATA.config.html );
+            }
+
+            mudaFrame.onsubmit = function( e ){
+                e.preventDefault();
+                CLIENT_DATA.config.url = this.url.value;
+                sendRequest( '/api/get_site?site=' + CLIENT_DATA.config.url , null, handleRequestSuccess );
+            }
+        </script>
+    </body>
+</html>
