@@ -17,12 +17,9 @@ app.get('/api/get_site' , function( req , res ){
 
    http.get({ host : url }, function (http_res) {
         var data = "";
-
         http_res.on("data", function (chunk) {
-            
             data += chunk;
         });
-        
         http_res.on("end", function () {
             res.send(data);
         });
